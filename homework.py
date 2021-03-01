@@ -21,27 +21,28 @@ class Calculator:
     def add_record(self, record):
         self.records.append(record)
 
-    def get_today_status(self):
+    def get_today_stats(self):
         return sum([record.amount for record in self.records
                     if record.date == date_now])
 
-    def get_week_status(self):
+    def get_week_stats(self):
         date_7 = date_now - dt.timedelta(days=7)
         return sum([record.amount for record in self.records
-                    if date_7 <= record.date <= self.date])
+                    if date_7 <= record.date <= date_now])
 
     def get_today_remained(self):
-        return self.limit - self.get_today_status
+        return self.limit - self.get_today_stats()
 
 
 class CaloriesCalculator(Calculator):
     def get_calories_remained(self):
-        if self.get_today_remained() >= self.limit:
+        calories_remained = self.limit - self.get_today_stats()
+        if calories_remained <= 0:
             return('Хватит есть!')
         else:
             return('Сегодня можно съесть что-нибудь ещё, '
                    'но с общей калорийностью не более '
-                   f'{self.get_today_remained()} кКал')
+                   f'{calories_remained} кКал')
 
 
 class CashCalculator(Calculator):
@@ -49,17 +50,16 @@ class CashCalculator(Calculator):
     EURO_RATE = 70.0
 
     def get_today_cash_remained(self, currency):
-        count = 0.0
+        count = self.limit - self.get_today_stats()
         if currency == 'rub':
-            count = self.get_today_remained()
+            money = f'{abs(count)} руб'
         elif currency == 'usd':
-            count = self.get_today_remained()/self.USD_RATE
+            money = f'{abs(round(count/self.USD_RATE, 2))} USD'
         elif currency == 'eur':
-            count = self.get_today_remained()/self.EURO_RATE
-        if count == self.limit:
-            return 'Денег нет, держись'
-        elif count < self.limit:
-            return f'На сегодня осталось {count} {currency}'
+            money = f'{abs(round(count/self.EURO_RATE, 2))} Euro'
+        if count > 0:
+            return f'На сегодня осталось {money}'
+        elif count < 0:
+            return f'Денег нет, держись: твой долг - {money}'
         else:
-            count = count - self.limit
-            return f'Денег нет, держись: твой долг - {count} {currency}'
+            return 'Денег нет, держись'
