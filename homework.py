@@ -52,14 +52,14 @@ class CashCalculator(Calculator):
     BALANCE_NEGATIVE = 'Денег нет, держись: твой долг - {key}'
     BALANCE_ZERO = 'Денег нет, держись'
     currency_db = {
-                   'rub': [1, 'руб'],
-                   'usd': [USD_RATE, 'USD'],
-                   'eur': [EURO_RATE, 'Euro']
-                   }
+                  'rub': [1, 'руб'],
+                  'usd': [USD_RATE, 'USD'],
+                  'eur': [EURO_RATE, 'Euro']
+                  }
 
     def get_today_cash_remained(self, currency):
         today_remained = self.limit - self.get_today_stats()
-        cash = round(today_remained/self.currency_db[currency][0], 2)
+        cash = round(today_remained / self.currency_db[currency][0], 2)
         if today_remained > 0:
             money = f'{cash} {self.currency_db[currency][1]}'
             return self.BALANCE_POSITIVE.format(key=money)
