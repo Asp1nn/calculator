@@ -1,19 +1,21 @@
 import datetime as dt
 
-date_now = dt.datetime.now().date()
-
 
 class Record:
+    DATE_FORMAT = '%d.%m.%Y'
+
     def __init__(self, amount, comment, date=None):
         self.amount = amount
         self.comment = comment
         if date is None:
-            self.date = date_now
+            self.date = dt.datetime.now().date()
         else:
-            self.date = dt.datetime.strptime(date, '%d.%m.%Y').date()
+            self.date = dt.datetime.strptime(date, self.DATE_FORMAT).date()
 
 
 class Calculator:
+    WEEK = dt.datetime.now().date() - dt.timedelta(days=7)
+
     def __init__(self, limit):
         self.limit = limit
         self.records = []
@@ -22,44 +24,47 @@ class Calculator:
         self.records.append(record)
 
     def get_today_stats(self):
-        return sum([record.amount for record in self.records
-                    if record.date == date_now])
+        return sum(record.amount for record in self.records
+                   if record.date == dt.datetime.now().date())
 
     def get_week_stats(self):
-        date_7 = date_now - dt.timedelta(days=7)
         return sum([record.amount for record in self.records
-                    if date_7 <= record.date <= date_now])
-
-    def get_today_remained(self):
-        return self.limit - self.get_today_stats()
+                    if self.WEEK < record.date <= dt.datetime.now().date()])
 
 
 class CaloriesCalculator(Calculator):
+    ANSWER_NEGATIVE = 'Хватит есть!'
+    ANSWER_POSITIVE = ('Сегодня можно съесть что-нибудь ещё, '
+                       'но с общей калорийностью не более '
+                       '{key} кКал')
+
     def get_calories_remained(self):
         calories_remained = self.limit - self.get_today_stats()
         if calories_remained <= 0:
-            return('Хватит есть!')
-        else:
-            return('Сегодня можно съесть что-нибудь ещё, '
-                   'но с общей калорийностью не более '
-                   f'{calories_remained} кКал')
+            return self.ANSWER_NEGATIVE
+        return self.ANSWER_POSITIVE.format(key=calories_remained)
 
 
 class CashCalculator(Calculator):
     USD_RATE = 60.0
     EURO_RATE = 70.0
+    BALANCE_POSITIVE = 'На сегодня осталось {key}'
+    BALANCE_NEGATIVE = 'Денег нет, держись: твой долг - {key}'
+    BALANCE_ZERO = 'Денег нет, держись'
+    currency_db = {
+                    'rub': [1, 'руб'],
+                    'usd': [USD_RATE, 'USD'],
+                    'eur': [EURO_RATE, 'Euro']
+                  }
 
     def get_today_cash_remained(self, currency):
-        count = self.limit - self.get_today_stats()
-        if currency == 'rub':
-            money = f'{abs(count)} руб'
-        elif currency == 'usd':
-            money = f'{abs(round(count/self.USD_RATE, 2))} USD'
-        elif currency == 'eur':
-            money = f'{abs(round(count/self.EURO_RATE, 2))} Euro'
-        if count > 0:
-            return f'На сегодня осталось {money}'
-        elif count < 0:
-            return f'Денег нет, держись: твой долг - {money}'
+        today_remained = self.limit - self.get_today_stats()
+        cash = round(today_remained/self.currency_db[currency][0], 2)
+        if today_remained > 0:
+            money = f'{cash} {self.currency_db[currency][1]}'
+            return self.BALANCE_POSITIVE.format(key=money)
+        elif today_remained < 0:
+            money = f'{abs(cash)} {self.currency_db[currency][1]}'
+            return self.BALANCE_NEGATIVE.format(key=money)
         else:
-            return 'Денег нет, держись'
+            return self.BALANCE_ZERO
