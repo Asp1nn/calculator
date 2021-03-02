@@ -53,10 +53,10 @@ class CashCalculator(Calculator):
     BALANCE_ZERO = 'Денег нет, держись'
     INVALID_CURRENCY = 'Данная валюта не используется'
     currency_db = {
-                    'rub': [1, 'руб'],
-                    'usd': [USD_RATE, 'USD'],
-                    'eur': [EURO_RATE, 'Euro']
-                   }
+                  'rub': [1, 'руб'],
+                  'usd': [USD_RATE, 'USD'],
+                  'eur': [EURO_RATE, 'Euro']
+                  }
 
     def get_today_cash_remained(self, currency):
         for key in self.currency_db:
