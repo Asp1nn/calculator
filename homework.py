@@ -14,7 +14,7 @@ class Record:
 
 
 class Calculator:
-    WEEK_AGO = dt.timedelta(days=7)
+    WEEK = dt.timedelta(days=7)
 
     def __init__(self, limit):
         self.limit = limit
@@ -29,23 +29,23 @@ class Calculator:
                    if record.date == data_now)
 
     def get_week_stats(self):
-        week = dt.date.today() - self.WEEK_AGO
         data_now = dt.date.today()
+        week = data_now - self.WEEK
         return sum(record.amount for record in self.records
                    if week < record.date <= data_now)
 
 
 class CaloriesCalculator(Calculator):
-    ANSWER_NEGATIVE = 'Хватит есть!'
-    ANSWER_POSITIVE = ('Сегодня можно съесть что-нибудь ещё, '
-                       'но с общей калорийностью не более '
-                       '{key} кКал')
+    NEGATIVE = 'Хватит есть!'
+    POSITIVE = ('Сегодня можно съесть что-нибудь ещё, '
+                'но с общей калорийностью не более '
+                '{key} кКал')
 
     def get_calories_remained(self):
         calories_remained = self.limit - self.get_today_stats()
         if calories_remained <= 0:
-            return self.ANSWER_NEGATIVE
-        return self.ANSWER_POSITIVE.format(key=calories_remained)
+            return self.NEGATIVE
+        return self.POSITIVE.format(key=calories_remained)
 
 
 class CashCalculator(Calculator):
@@ -54,7 +54,7 @@ class CashCalculator(Calculator):
     BALANCE_POSITIVE = 'На сегодня осталось {balance} {currency}'
     BALANCE_NEGATIVE = 'Денег нет, держись: твой долг - {balance} {currency}'
     BALANCE_ZERO = 'Денег нет, держись'
-    INVALID_CURRENCY = 'Данная валюта не используется'
+    INVALID_CURRENCY = 'Валюта - {currency} в калькуляторе не используется'
     CURRENCY_DB = {
         'rub': [1, 'руб'],
         'usd': [USD_RATE, 'USD'],
@@ -63,12 +63,12 @@ class CashCalculator(Calculator):
 
     def get_today_cash_remained(self, currency):
         if currency not in self.CURRENCY_DB:
-            raise ValueError(self.INVALID_CURRENCY)
+            raise ValueError(self.INVALID_CURRENCY.format(currency=currency))
         today_remained = self.limit - self.get_today_stats()
         if today_remained == 0:
             return self.BALANCE_ZERO
-        cash = round(today_remained / self.CURRENCY_DB[currency][0], 2)
-        name = f'{self.CURRENCY_DB[currency][1]}'
+        rate, name = self.CURRENCY_DB[currency]
+        cash = round(today_remained / rate, 2)
         if today_remained > 0:
             return self.BALANCE_POSITIVE.format(balance=cash, currency=name)
         return self.BALANCE_NEGATIVE.format(balance=abs(cash), currency=name)
