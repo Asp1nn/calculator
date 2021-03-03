@@ -8,13 +8,13 @@ class Record:
         self.amount = amount
         self.comment = comment
         if date is None:
-            self.date = dt.datetime.now().date()
+            self.date = dt.date.today()
         else:
             self.date = dt.datetime.strptime(date, self.DATE_FORMAT).date()
 
 
 class Calculator:
-    WEEK = dt.datetime.now().date() - dt.timedelta(days=7)
+    WEEK_AGO = dt.timedelta(days=7)
 
     def __init__(self, limit):
         self.limit = limit
@@ -24,12 +24,15 @@ class Calculator:
         self.records.append(record)
 
     def get_today_stats(self):
+        data_now = dt.date.today()
         return sum(record.amount for record in self.records
-                   if record.date == dt.datetime.now().date())
+                   if record.date == data_now)
 
     def get_week_stats(self):
-        return sum([record.amount for record in self.records
-                    if self.WEEK < record.date <= dt.datetime.now().date()])
+        week = dt.date.today() - self.WEEK_AGO
+        data_now = dt.date.today()
+        return sum(record.amount for record in self.records
+                   if week < record.date <= data_now)
 
 
 class CaloriesCalculator(Calculator):
@@ -48,27 +51,24 @@ class CaloriesCalculator(Calculator):
 class CashCalculator(Calculator):
     USD_RATE = 60.0
     EURO_RATE = 70.0
-    BALANCE_POSITIVE = 'На сегодня осталось {key}'
-    BALANCE_NEGATIVE = 'Денег нет, держись: твой долг - {key}'
+    BALANCE_POSITIVE = 'На сегодня осталось {balance} {currency}'
+    BALANCE_NEGATIVE = 'Денег нет, держись: твой долг - {balance} {currency}'
     BALANCE_ZERO = 'Денег нет, держись'
     INVALID_CURRENCY = 'Данная валюта не используется'
-    currency_db = {
+    CURRENCY_DB = {
         'rub': [1, 'руб'],
         'usd': [USD_RATE, 'USD'],
         'eur': [EURO_RATE, 'Euro']
     }
 
     def get_today_cash_remained(self, currency):
-        for key in self.currency_db:
-            if currency == key:
-                today_remained = self.limit - self.get_today_stats()
-                cash = round(today_remained / self.currency_db[currency][0], 2)
-                if today_remained > 0:
-                    money = f'{cash} {self.currency_db[currency][1]}'
-                    return self.BALANCE_POSITIVE.format(key=money)
-                elif today_remained < 0:
-                    money = f'{abs(cash)} {self.currency_db[currency][1]}'
-                    return self.BALANCE_NEGATIVE.format(key=money)
-                else:
-                    return self.BALANCE_ZERO
-        return self.INVALID_CURRENCY
+        if currency not in self.CURRENCY_DB:
+            raise ValueError(self.INVALID_CURRENCY)
+        today_remained = self.limit - self.get_today_stats()
+        if today_remained == 0:
+            return self.BALANCE_ZERO
+        cash = round(today_remained / self.CURRENCY_DB[currency][0], 2)
+        name = f'{self.CURRENCY_DB[currency][1]}'
+        if today_remained > 0:
+            return self.BALANCE_POSITIVE.format(balance=cash, currency=name)
+        return self.BALANCE_NEGATIVE.format(balance=abs(cash), currency=name)
