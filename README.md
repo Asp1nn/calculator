@@ -1,2 +1,1 @@
-# hw_python_oop
-Sprint 2. Итоговый проект.
+# Сalorie and finance calculator
